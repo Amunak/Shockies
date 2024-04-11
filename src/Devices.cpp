@@ -64,6 +64,23 @@ bool Device::ShouldTransmit(unsigned int currentTime)
 	return true;
 }
 
+bool Device::ShouldTransmitKeepalive(unsigned int currentTime) const
+{
+	unsigned char interval = DeviceSettings.KeepaliveInterval;
+	if (interval == 0) {
+		return false;
+	}
+
+	if (DeviceHasCommand) {
+		return false;
+	}
+
+	// Ensure the interval is at least 10 seconds
+	interval = std::max<unsigned char>(10, interval);
+
+	return (currentTime - DeviceCommandStart) > (interval * 1000);
+}
+
 Petrainer::Petrainer(shared_ptr<Transmitter> transmitter, Settings deviceSettings)
 	: Device(
 	std::move(transmitter),

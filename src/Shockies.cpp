@@ -13,6 +13,8 @@
 
 ShockiesRemote *remoteControl;
 
+void TransmitKeepalive(unsigned int currentTime, unique_ptr<Device> &device);
+
 void setup()
 {
 	unsigned long wifiConnectTime = 0;
@@ -35,10 +37,11 @@ void setup()
 			Device.Features = Command::None;
 			Device.ShockIntensity = 30;
 			Device.ShockDuration = 5;
-			Device.ShockInterval = 5;
-			Device.VibrateIntensity = 50;
+			Device.ShockInterval = 3;
+			Device.VibrateIntensity = 100;
 			Device.VibrateDuration = 5;
 			Device.DeviceId = (uint16_t) (esp_random() % 65536);
+			Device.KeepaliveInterval = 0;
 		}
 
 		memset(EEPROMData.WifiName, 0, 33);
@@ -164,7 +167,21 @@ void loop()
 	lock_guard<mutex> guard(DevicesMutex);
 	for (auto &device: Devices) {
 		device->TransmitCommand(currentTime);
+
+		// check when we last transmitted and send a keepalive if needed
+		if (device->ShouldTransmitKeepalive(currentTime)) {
+			TransmitKeepalive(currentTime, device);
+		}
 	}
+}
+
+void TransmitKeepalive(unsigned int currentTime, unique_ptr<Device> &device)
+{
+	Serial.printf("Sending keepalive to device %d\n", device->DeviceSettings.DeviceId);
+	device->SetCommand(Command::Vibrate, 0);
+	device->TransmitCommand(currentTime);
+	delay(600);
+	device->SetCommand(Command::None);
 }
 
 String templateProcessor(const String &var)
@@ -192,6 +209,8 @@ String templateProcessor(const String &var)
 			return String(static_cast<uint8_t>(EEPROMData.Devices[deviceIndex].Type));
 		} else if (deviceVar == "DeviceId") {
 			return String(EEPROMData.Devices[deviceIndex].DeviceId);
+		} else if (deviceVar == "KeepaliveInterval") {
+			return String(EEPROMData.Devices[deviceIndex].KeepaliveInterval);
 		} else if (deviceVar == "LightEnabled") {
 			return EEPROMData.Devices[deviceIndex].FeatureEnabled(Command::Light) ? "checked" : "";
 		} else if (deviceVar == "BeepEnabled") {
@@ -264,6 +283,9 @@ void HTTP_POST_Submit(AsyncWebServerRequest *request)
 			}
 			if (request->hasParam("device_type" + String(devId), true)) {
 				EEPROMData.Devices[devId].Type = (Model) request->getParam("device_type" + String(devId), true)->value().toInt();
+			}
+			if (request->hasParam("device_keepalive_interval" + String(devId), true)) {
+				EEPROMData.Devices[devId].KeepaliveInterval = request->getParam("device_keepalive_interval" + String(devId), true)->value().toInt();
 			}
 			if (request->hasParam("shock_max_intensity" + String(devId), true)) {
 				EEPROMData.Devices[devId].ShockIntensity = request->getParam("shock_max_intensity" + String(devId), true)->value().toInt();

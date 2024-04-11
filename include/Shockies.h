@@ -14,8 +14,8 @@ using std::mutex;
 using std::lock_guard;
 
 #define UUID_STR_LEN 37
-#define SHOCKIES_SETTINGS_VERSION 8
-#define SHOCKIES_VERSION "1.4.0"
+#define SHOCKIES_SETTINGS_VERSION 9
+#define SHOCKIES_VERSION "1.5.0"
 
 typedef uint8_t uuid_t[16];
 

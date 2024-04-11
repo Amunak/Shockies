@@ -104,11 +104,15 @@ http://192.168.2.2
 You can now access your device using http://shockies.local or using the IP address shown in the Serial Monitor.
 
 ### Configuration
-The configuration page found on http://shockies.local allows you to set maximum values for intensity and duration for each of the 3 mappable collars. 
-Additionally, you can choose between the *PET998DR Clone* and *FunniPets* collars
+The configuration page found on http://shockies.local allows you to set maximum values for intensity and duration for each of the 3 mappable collars.
+
+#### Device Settings
+- **Device ID**: A unique identifier for the "controller"/transmitter. This is used to differentiate between different controllers, and to prevent one controller from interfering with another. The collars pair to this ID.
+- **Device Type**: The type of collar you are using. Currently you can choose between the *PET998DR Clone* and *FunniPets / Aliexpress Generic* collars.
+- **Keep-Alive**: If enabled, the device will periodically make a "keep-alive" transmission (of a short vibration at 0 intensity) to the collar to prevent it from going to sleep.
 
 #### Enabled Features
-Allows the user to specified which collar features are enabled. 
+Allows the user to specify which collar features are enabled.
 * Light
 * Beep
 * Vibrate
@@ -141,4 +145,3 @@ An alpha implementation can be found in the follwing public folder:
 
 ## Web Control
 *Not yet implemented*
-

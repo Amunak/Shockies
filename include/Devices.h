@@ -42,6 +42,8 @@ struct Settings
 	unsigned char VibrateIntensity = 0;
 	/// Determines how long a single vibrate command can last
 	unsigned char VibrateDuration = 0;
+	/// Determines how often we should send a keepalive signal (in seconds, 0 to disable)
+	unsigned char KeepaliveInterval = 0;
 
 	/**
 	 * Enable the specified feature(s)
@@ -82,6 +84,8 @@ public:
 	bool CheckWatchdog(unsigned int currentTime) const;
 
 	bool ShouldTransmit(unsigned int currentTime);
+
+	bool ShouldTransmitKeepalive(unsigned int currentTime) const;
 
 	virtual void TransmitCommand(unsigned int currentTime) = 0;
 
