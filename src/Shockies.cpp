@@ -15,7 +15,7 @@ ShockiesRemote *remoteControl;
 
 void setup()
 {
-	int wifiConnectTime = 0;
+	unsigned long wifiConnectTime = 0;
 	Serial.begin(115200);
 	Serial.setDebugOutput(true);
 	Serial.println();
@@ -30,15 +30,15 @@ void setup()
 	EEPROM.get(0, EEPROMData);
 
 	if (EEPROMData.SettingsVersion != SHOCKIES_SETTINGS_VERSION) {
-		for (int dev = 0; dev < 3; dev++) {
-			EEPROMData.Devices[dev].Type = Model::Petrainer;
-			EEPROMData.Devices[dev].Features = Command::None;
-			EEPROMData.Devices[dev].ShockIntensity = 30;
-			EEPROMData.Devices[dev].ShockDuration = 5;
-			EEPROMData.Devices[dev].ShockInterval = 5;
-			EEPROMData.Devices[dev].VibrateIntensity = 50;
-			EEPROMData.Devices[dev].VibrateDuration = 5;
-			EEPROMData.Devices[dev].DeviceId = (uint16_t) (esp_random() % 65536);
+		for (auto & Device : EEPROMData.Devices) {
+			Device.Type = Model::Petrainer;
+			Device.Features = Command::None;
+			Device.ShockIntensity = 30;
+			Device.ShockDuration = 5;
+			Device.ShockInterval = 5;
+			Device.VibrateIntensity = 50;
+			Device.VibrateDuration = 5;
+			Device.DeviceId = (uint16_t) (esp_random() % 65536);
 		}
 
 		memset(EEPROMData.WifiName, 0, 33);
@@ -64,21 +64,21 @@ void setup()
 		Serial.printf("SSID: %s\n", EEPROMData.WifiName);
 		Serial.printf("Password: %s\n", EEPROMData.WifiPassword);
 
-		WiFi.mode(WIFI_STA);
+		WiFiClass::mode(WIFI_STA);
 		WiFi.begin(EEPROMData.WifiName, EEPROMData.WifiPassword);
 		wifiConnectTime = millis();
-		while (WiFi.status() != WL_CONNECTED && millis() - wifiConnectTime < 10000) {
+		while (WiFiClass::status() != WL_CONNECTED && millis() - wifiConnectTime < 10000) {
 			delay(1000);
 		}
 	}
 
-	if (WiFi.status() == WL_CONNECTED) {
+	if (WiFiClass::status() == WL_CONNECTED) {
 		Serial.println("Wi-Fi Connected!");
 	} else {
 		Serial.println("Failed to connect to Wi-Fi");
 		Serial.println("Creating temporary Access Point for configuration...");
 
-		WiFi.mode(WIFI_AP);
+		WiFiClass::mode(WIFI_AP);
 
 		if (WiFi.softAP("ShockiesConfig", "zappyzap")) {
 			Serial.println("Access Point created!");
@@ -135,7 +135,7 @@ void setup()
 		Serial.println("http://shockies.local");
 	}
 	Serial.print("http://");
-	if (WiFi.status() == WL_CONNECTED) {
+	if (WiFiClass::status() == WL_CONNECTED) {
 		Serial.println(WiFi.localIP());
 	} else {
 		Serial.println(WiFi.softAPIP());
@@ -209,17 +209,17 @@ String templateProcessor(const String &var)
 		} else if (deviceVar == "VibrateDuration") {
 			return String(EEPROMData.Devices[deviceIndex].VibrateDuration);
 		} else {
-			return String();
+			return {};
 		}
 	} else {
-		return String();
+		return {};
 	}
 }
 
 void HTTP_GET_Index(AsyncWebServerRequest *request)
 {
 	// If Wi-Fi is connected to an AP, send the default configuration page
-	if (WiFi.status() == WL_CONNECTED) {
+	if (WiFiClass::status() == WL_CONNECTED) {
 		request->send(SPIFFS, "/index.html", String(), false, templateProcessor);
 	}
 		// Otherwise we're in SoftAP mode
@@ -325,7 +325,7 @@ void HTTP_POST_Update(AsyncWebServerRequest *request)
 	rebootDevice = true;
 }
 
-void HTTP_FILE_Update(AsyncWebServerRequest *request, String fileName, size_t index, uint8_t *data, size_t len, bool final)
+void HTTP_FILE_Update(AsyncWebServerRequest *request, const String& fileName, size_t index, uint8_t *data, size_t len, bool final)
 {
 	if (!request->authenticate("admin", EEPROMData.WifiPassword)) {
 		return request->requestAuthentication();
@@ -371,7 +371,7 @@ void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
 		}
 			break;
 		case WS_EVT_DATA: {
-			AwsFrameInfo *info = (AwsFrameInfo *) arg;
+			auto *info = (AwsFrameInfo *) arg;
 			if (info->final && info->opcode == WS_TEXT) {
 				data[len] = '\0';
 				Serial.printf("[%u] Message: %s\r\n", client->id(), data);
@@ -381,6 +381,12 @@ void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
 				}
 			}
 		}
+			break;
+		case WS_EVT_PONG:
+			Serial.printf("[%u] Pong\r\n", client->id());
+			break;
+		case WS_EVT_ERROR:
+			Serial.printf("[%u] Error!\r\n", client->id());
 			break;
 	}
 }
@@ -434,10 +440,10 @@ const char *HandleCommand(char *data)
 	}
 
 	char *command = strtok((char *) data, " ");
-	char *id_str = strtok(0, " ");
-	char *intensity_str = strtok(0, " ");
+	char *id_str = strtok(nullptr, " ");
+	char *intensity_str = strtok(nullptr, " ");
 
-	if (command == 0) {
+	if (command == nullptr) {
 		return "ERROR: INVALID FORMAT";
 	}
 
@@ -463,7 +469,7 @@ const char *HandleCommand(char *data)
 		return nullptr;
 	}
 
-	if (id_str == 0 || intensity_str == 0) {
+	if (id_str == nullptr || intensity_str == nullptr) {
 		return "ERROR: INVALID FORMAT";
 	}
 
@@ -502,13 +508,13 @@ void UpdateDevices()
 {
 	std::lock_guard<std::mutex> guard(DevicesMutex);
 	Devices.clear();
-	for (int i = 0; i < 3; i++) {
-		switch (EEPROMData.Devices[i].Type) {
+	for (auto & Device : EEPROMData.Devices) {
+		switch (Device.Type) {
 			case Model::Petrainer:
-				Devices.push_back(std::unique_ptr<Petrainer>(new Petrainer(DeviceTransmitter, EEPROMData.Devices[i])));
+				Devices.push_back(std::unique_ptr<Petrainer>(new Petrainer(DeviceTransmitter, Device)));
 				break;
 			case Model::Funtrainer:
-				Devices.push_back(std::unique_ptr<Funnipet>(new Funnipet(DeviceTransmitter, EEPROMData.Devices[i])));
+				Devices.push_back(std::unique_ptr<Funnipet>(new Funnipet(DeviceTransmitter, Device)));
 				break;
 		}
 	}

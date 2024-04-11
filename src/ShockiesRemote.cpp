@@ -1,6 +1,8 @@
 #include <ShockiesRemote.h>
 #include <AsyncTCP_SSL.h>
 
+#include <utility>
+
 AsyncSSLClient *client = nullptr;
 
 ShockiesRemote::ShockiesRemote(const char *uuid)
@@ -17,21 +19,21 @@ void ShockiesRemote::connect(const char *addr, unsigned int port)
 	client->connect(addr, port, true);
 	client->onConnect(
 		[](void *sr, AsyncSSLClient *c) {
-			ShockiesRemote *remote = (ShockiesRemote *) sr;
+			auto *remote = (ShockiesRemote *) sr;
 			remote->connected(c);
 		},
 		this
 	);
 	client->onDisconnect(
 		[](void *sr, AsyncSSLClient *c) {
-			ShockiesRemote *remote = (ShockiesRemote *) sr;
+			auto *remote = (ShockiesRemote *) sr;
 			remote->disconnected(c);
 		},
 		this
 	);
 	client->onData(
 		[](void *sr, AsyncSSLClient *c, void *d, size_t l) {
-			ShockiesRemote *remote = (ShockiesRemote *) sr;
+			auto *remote = (ShockiesRemote *) sr;
 			remote->data(c, d, l);
 		},
 		this
@@ -46,7 +48,7 @@ void ShockiesRemote::disconnect()
 
 void ShockiesRemote::sendCommand(const char *command)
 {
-	int len = strlen(command);
+	auto len = strlen(command);
 	if (len + 1 < sizeof(dataBuf)) {
 		strncpy(dataBuf + 1, command, len);
 		dataBuf[0] = len;
@@ -54,24 +56,24 @@ void ShockiesRemote::sendCommand(const char *command)
 	}
 }
 
-bool ShockiesRemote::isConnected()
+bool ShockiesRemote::isConnected() const
 {
 	return _isConnected;
 }
 
 void ShockiesRemote::onCommand(CommandHandler handler)
 {
-	_commandHandler = handler;
+	_commandHandler = std::move(handler);
 }
 
 void ShockiesRemote::onConnected(ConnectionHandler handler)
 {
-	_connectedHandler = handler;
+	_connectedHandler = std::move(handler);
 }
 
 void ShockiesRemote::onDisconnected(ConnectionHandler handler)
 {
-	_disconnectedHandler = handler;
+	_disconnectedHandler = std::move(handler);
 }
 
 void ShockiesRemote::connected(AsyncSSLClient *c)
@@ -99,7 +101,7 @@ void ShockiesRemote::disconnected(AsyncSSLClient *client)
 	_disconnecting = false;
 }
 
-void ShockiesRemote::data(AsyncSSLClient *client, void *data, int len)
+void ShockiesRemote::data(AsyncSSLClient *client, void *data, size_t len)
 {
 	char *str = (char *) data;
 

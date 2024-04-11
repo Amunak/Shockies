@@ -49,7 +49,7 @@ struct Protocol
 class Transmitter
 {
 public:
-	Transmitter(unsigned char transmitPin = 4);
+	explicit Transmitter(unsigned char transmitPin = 4);
 
 	void Transmit(Protocol protocol, unsigned long long data, unsigned char length, unsigned char repeat = 2);
 
@@ -59,7 +59,7 @@ public:
 	}
 
 private:
-	inline void TransmitPulse(Pulse pulse);
+	inline void TransmitPulse(Pulse pulse) const;
 
 	unsigned char TransmitPin;
 };

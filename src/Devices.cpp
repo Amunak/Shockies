@@ -1,8 +1,10 @@
 #include <Devices.h>
 #include <Arduino.h>
 
+#include <utility>
+
 Device::Device(shared_ptr<Transmitter> transmitter, const Model deviceModel, const Settings deviceSettings, const Protocol deviceProtocol)
-	: DeviceTransmitter(transmitter), DeviceModel(deviceModel), DeviceSettings(deviceSettings), DeviceProtocol(deviceProtocol)
+	: DeviceTransmitter(std::move(std::move(std::move(transmitter)))), DeviceModel(deviceModel), DeviceSettings(deviceSettings), DeviceProtocol(deviceProtocol)
 {
 	DeviceCommandStart = DeviceCommandEnd = millis();
 }
@@ -43,7 +45,7 @@ void Device::ResetWatchdog(unsigned int currentTime)
 	WatchdogTime = millis();
 }
 
-bool Device::CheckWatchdog(unsigned int currentTime)
+bool Device::CheckWatchdog(unsigned int currentTime) const
 {
 	return currentTime - WatchdogTime < WatchdogTimeout;
 }
@@ -64,7 +66,7 @@ bool Device::ShouldTransmit(unsigned int currentTime)
 
 Petrainer::Petrainer(shared_ptr<Transmitter> transmitter, Settings deviceSettings)
 	: Device(
-	transmitter,
+	std::move(transmitter),
 	Model::Petrainer,
 	deviceSettings,
 	{{750, 625},
@@ -131,7 +133,7 @@ unsigned char Petrainer::MapCommand(Command targetCommand)
 
 Funnipet::Funnipet(shared_ptr<Transmitter> transmitter, Settings deviceSettings)
 	: Device(
-	transmitter,
+	std::move(transmitter),
 	Model::Funtrainer,
 	deviceSettings,
 	{{1375, 810},

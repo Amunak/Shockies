@@ -22,7 +22,7 @@ void Transmitter::Transmit(Protocol protocol, unsigned long long data, unsigned 
 	delayMicroseconds(10);
 }
 
-inline void Transmitter::TransmitPulse(Pulse pulse)
+inline void Transmitter::TransmitPulse(Pulse pulse) const
 {
 	digitalWrite(TransmitPin, HIGH);
 	delayMicroseconds(pulse.High);

@@ -59,7 +59,7 @@ struct Settings
 	 * @param feature The feature to check against currently enabled features
 	 * @return 'True' if this feature is enabled, 'False' if not.
 	 */
-	bool FeatureEnabled(Command feature)
+	bool FeatureEnabled(Command feature) const
 	{
 		return (static_cast<unsigned char>(Features) & static_cast<unsigned char>(feature)) == static_cast<unsigned char>(feature);
 	}
@@ -73,13 +73,13 @@ public:
 	const Protocol DeviceProtocol;
 	const Settings DeviceSettings;
 
-	Device(shared_ptr<Transmitter> transmitter, const Model deviceModel, const Settings deviceSettings, const Protocol deviceProtocol);
+	Device(shared_ptr<Transmitter> transmitter, Model deviceModel, Settings deviceSettings, Protocol deviceProtocol);
 
 	void SetCommand(Command targetCommand = Command::None, unsigned char value = 0);
 
 	void ResetWatchdog(unsigned int currentTime);
 
-	bool CheckWatchdog(unsigned int currentTime);
+	bool CheckWatchdog(unsigned int currentTime) const;
 
 	bool ShouldTransmit(unsigned int currentTime);
 
@@ -96,10 +96,10 @@ protected:
 	const shared_ptr<Transmitter> DeviceTransmitter;
 	bool DeviceHasCommand = false;
 	Command DeviceCommand;
-	unsigned char DeviceCommandValue;
+	unsigned char DeviceCommandValue{};
 	unsigned int DeviceCommandStart;
 	unsigned int DeviceCommandEnd;
-	unsigned int WatchdogTime;
+	unsigned int WatchdogTime{};
 };
 
 class Petrainer : public Device

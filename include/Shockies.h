@@ -78,7 +78,7 @@ void HTTP_POST_Submit(AsyncWebServerRequest *request);
 void HTTP_POST_Update(AsyncWebServerRequest *request);
 
 /// File Handler for '/Update'
-void HTTP_FILE_Update(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
+void HTTP_FILE_Update(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final);
 
 /// Handler for WebSocket events.
 void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);

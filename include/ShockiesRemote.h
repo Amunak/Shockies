@@ -21,7 +21,7 @@ enum ShockiesFrameType : uint8_t
 class ShockiesRemote
 {
 public:
-	ShockiesRemote(const char *uuid);
+	explicit ShockiesRemote(const char *uuid);
 
 	void connect(const char *addr, unsigned int port);
 
@@ -29,7 +29,7 @@ public:
 
 	void sendCommand(const char *command);
 
-	bool isConnected();
+	bool isConnected() const;
 
 	void onCommand(CommandHandler handler);
 
@@ -38,7 +38,7 @@ public:
 	void onDisconnected(ConnectionHandler handler);
 
 private:
-	char dataBuf[256];
+	char dataBuf[256]{};
 	const char *deviceUuid = nullptr;
 	const char *addr = nullptr;
 	unsigned int port = 0;
@@ -54,7 +54,7 @@ private:
 
 	void disconnected(AsyncSSLClient *client);
 
-	void data(AsyncSSLClient *client, void *data, int len);
+	void data(AsyncSSLClient *client, void *data, size_t len);
 };
 
 #endif
