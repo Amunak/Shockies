@@ -46,6 +46,7 @@ void setup()
 
 		memset(EEPROMData.WifiName, 0, 33);
 		memset(EEPROMData.WifiPassword, 0, 65);
+		memset(EEPROMData.CommandAccessKey, 0, 65);
 		memset(EEPROMData.DeviceId, 0, UUID_STR_LEN);
 		EEPROMData.RequireDeviceId = false;
 		EEPROMData.AllowRemoteAccess = false;
@@ -193,6 +194,8 @@ String templateProcessor(const String &var)
 		return EEPROMData.RequireDeviceId ? "checked" : "";
 	} else if (var == "AllowRemoteAccess") {
 		return EEPROMData.AllowRemoteAccess ? "checked" : "";
+	} else if (var == "CommandAccessKey") {
+		return EEPROMData.CommandAccessKey;
 	} else if (var == "WifiName") {
 		return EEPROMData.WifiName;
 	} else if (var == "WifiPassword") {
@@ -303,13 +306,22 @@ void HTTP_POST_Submit(AsyncWebServerRequest *request)
 				EEPROMData.Devices[devId].VibrateDuration = request->getParam("vibrate_max_duration" + String(devId), true)->value().toInt();
 			}
 		}
+
+		if (request->hasParam("command_access_key", true)) {
+			String &accessKey = const_cast<String &>(request->getParam("command_access_key", true)->value());
+			accessKey.replace(' ', '_');
+			accessKey.toCharArray(EEPROMData.CommandAccessKey, 65);
+		}
+
 		EEPROMData.RequireDeviceId = request->hasParam("require_device_id", true);
 		webSocket->enable(!EEPROMData.RequireDeviceId);
 		if (EEPROMData.RequireDeviceId) {
 			webSocket->closeAll();
 		}
+
 		EEPROMData.AllowRemoteAccess = request->hasParam("allow_remote_access", true);
 		EEPROM.put(0, EEPROMData);
+
 		EEPROM.commit();
 
 		//if(EEPROMData.AllowRemoteAccess && !remoteControl->isConnected())
@@ -500,6 +512,13 @@ const char *HandleCommand(char *data)
 
 	if (id_str == nullptr || intensity_str == nullptr) {
 		return "ERROR: INVALID FORMAT";
+	}
+
+	if (EEPROMData.CommandAccessKey[0] != '\0') {
+		char *access_key = strtok(nullptr, " ");
+		if (access_key == nullptr || strcmp(access_key, EEPROMData.CommandAccessKey) != 0) {
+			return "ERROR: INVALID ACCESS KEY";
+		}
 	}
 
 	uint16_t id = atoi(id_str);

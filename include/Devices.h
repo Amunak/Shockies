@@ -16,7 +16,7 @@ enum class Command : unsigned char
 	Beep = 0b00000100,
 	Light = 0b00001000,
 	All = 0b00001111,
-	Invalid = 0b11111111
+	Invalid = 0b11111111,
 };
 
 enum class Model : unsigned char

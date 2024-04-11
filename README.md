@@ -130,6 +130,12 @@ Specifies the maximum allowable intensity and continuious duration for Shock and
 Please **CAREFULLY** experiment starting with low (<5%) shock intensity, and slowly increase it until you find a suitable maximum intensity.
 The **Shock Interval** setting 
 
+#### Security Settings
+- **Require Device ID for local control**: If enabled, the device will require the use of a generated UUID for the websocket connection to control the device. You can see the UUID at the bottom of the page when you enable this option.
+- **Command Access Key**: Commands sent to the device must include this key as the last parameter in the command. This is to prevent unauthorized access to the device.
+- **Allow Remote Access**: Not yet implemented
+
+
 ## Firmware Updates
 The updates page on http://shockies.local/update allows you to remotely update the firmware on your device. The username will be `admin`, and the password will be the same as your WiFi network password.
 From this page, you can upload `firmware.bin` and `spiffs.bin` which can be found in the [releases](https://github.com/Aerizeon/Shockies/releases) section.

@@ -19,35 +19,32 @@
 				button.disabled = false;
 			});
 
-			button.addEventListener('mousedown', e => {
+			const SendCommand = e => {
 				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
 					const mode = document.querySelector('input[name="mode"]:checked').value;
 					const intensity = document.querySelector('input[name="intensity"]').value;
-					webSocket.send(mode + " 0 " + intensity);
+					const key = document.querySelector('#command_access_key').value;
+					webSocket.send(`${mode} 0 ${intensity} ${key}`);
 				}
-			});
-			button.addEventListener('mouseup', e => {
+			};
+			const ResetCommand = e => {
 				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
 					webSocket.send("R");
 				}
-			});
-			button.addEventListener('touchstart', e => {
-				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
-					const mode = document.querySelector('input[name="mode"]:checked').value;
-					const intensity = document.querySelector('input[name="intensity"]').value;
-					webSocket.send(mode + " 0 " + intensity);
-				}
-			});
-			button.addEventListener('touchend', e => {
-				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
-					webSocket.send("R");
-				}
-			});
-			window.setInterval(function () {
+			};
+
+			button.addEventListener('mousedown', SendCommand);
+			button.addEventListener('mouseup', ResetCommand);
+
+			button.addEventListener('touchstart', SendCommand);
+			button.addEventListener('touchend',ResetCommand);
+
+			window.setInterval(() => {
 				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
 					webSocket.send("P");
 				}
 			}, 1000);
+
 			const devType0 = document.querySelector('#device_type0');
 			const devType1 = document.querySelector('#device_type1');
 			const devType2 = document.querySelector('#device_type2');
@@ -215,7 +212,9 @@
 					<input type="checkbox" id="allow_remote_access" name="allow_remote_access"
 					       title="Allow this device to be controlled via shockies.dev" %AllowRemoteAccess%>
 					<label for="allow_remote_access">Allow Remote Access</label>
-
+					<label for="command_access_key">Command Access Key:</label>
+					<input type="text" id="command_access_key" name="command_access_key" maxlength="64" pattern="[^ ]*"
+					       title="Require additional access key to send commands (no spaces!)" value="%CommandAccessKey%">
 				</div>
 				<a href="http://shockies.local/update">Update Firmware</a>
 			</div>

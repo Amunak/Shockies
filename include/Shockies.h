@@ -14,7 +14,7 @@ using std::mutex;
 using std::lock_guard;
 
 #define UUID_STR_LEN 37
-#define SHOCKIES_SETTINGS_VERSION 9
+#define SHOCKIES_SETTINGS_VERSION 10
 #define SHOCKIES_VERSION "1.5.0"
 
 typedef uint8_t uuid_t[16];
@@ -58,6 +58,8 @@ struct EEPROM_Settings
 	bool RequireDeviceId = false;
 	/// Allow the device to be controlled from shockies.dev. This only works for me at the moment.
 	bool AllowRemoteAccess = false;
+	/// Additional key required with each command
+	char CommandAccessKey[65];
 	/// Allow up to 3 devices to be configured
 	Settings Devices[3];
 } EEPROMData;
