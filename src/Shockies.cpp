@@ -117,6 +117,8 @@ void setup()
 	// Global stylesheet
 	webServer.serveStatic("/styles.css", SPIFFS, "/styles.css");
 
+	webServer.onNotFound(HTTP_Handle_404);
+
 	webServer.begin();
 	webServer.addHandler(webSocket);
 	webServer.addHandler(webSocketId);
@@ -355,6 +357,11 @@ void HTTP_FILE_Update(AsyncWebServerRequest *request, const String& fileName, si
 			return request->send(400, "text/plain", "Update Unable to finish update");
 		}
 	}
+}
+
+void HTTP_Handle_404(AsyncWebServerRequest *request)
+{
+	request->send(404, "text/plain", "Not found");
 }
 
 void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
