@@ -245,7 +245,7 @@ void HTTP_GET_Update(AsyncWebServerRequest *request)
 void HTTP_POST_Submit(AsyncWebServerRequest *request)
 {
 	if (request->hasParam("configure_features", true)) {
-		for (int devId = 0; devId < 2; devId++) {
+		for (int devId = 0; devId <= 2; devId++) {
 			EEPROMData.Devices[devId].Features = Command::None;
 			if (request->hasParam("feature_light" + String(devId), true)) {
 				EEPROMData.Devices[devId].EnableFeature(Command::Light);
