@@ -106,6 +106,10 @@ You can now access your device using http://shockies.local or using the IP addre
 ### Configuration
 The configuration page found on http://shockies.local allows you to set maximum values for intensity and duration for each of the 3 mappable collars.
 
+#### Web Interface Screenshots
+![Shockies Device Configuration Page](./docs/images/device-configuration.png)
+![Shockies Security Configuration Panel](./docs/images/security-configuration.png)
+
 #### Device Settings
 - **Device ID**: A unique identifier for the "controller"/transmitter. This is used to differentiate between different controllers, and to prevent one controller from interfering with another. The collars pair to this ID.
 - **Device Type**: The type of collar you are using. Currently you can choose between the *PET998DR Clone* and *FunniPets / Aliexpress Generic* collars.
