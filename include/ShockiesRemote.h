@@ -1,5 +1,6 @@
 #ifndef _ShockiesRemote_h
 #define _ShockiesRemote_h
+
 #include <functional>
 #include <vector>
 
@@ -12,39 +13,48 @@ typedef std::function<void(void)> ConnectionHandler;
 
 enum ShockiesFrameType : uint8_t
 {
-    Unknown = 0,
-    Connect = 1,
-    Message = 2
+	Unknown = 0,
+	Connect = 1,
+	Message = 2
 };
 
 class ShockiesRemote
 {
 public:
-    ShockiesRemote(const char *uuid);
-    void connect(const char *addr, unsigned int port);
-    void disconnect();
-    void sendCommand(const char *command);
-    bool isConnected();
-    void onCommand(CommandHandler handler);
-    void onConnected(ConnectionHandler handler);
-    void onDisconnected(ConnectionHandler handler);
+	ShockiesRemote(const char *uuid);
+
+	void connect(const char *addr, unsigned int port);
+
+	void disconnect();
+
+	void sendCommand(const char *command);
+
+	bool isConnected();
+
+	void onCommand(CommandHandler handler);
+
+	void onConnected(ConnectionHandler handler);
+
+	void onDisconnected(ConnectionHandler handler);
 
 private:
-    char dataBuf[256];
-    const char* deviceUuid = nullptr;
-    const char* addr = nullptr;
-    unsigned int port = 0;
-    bool _isConnected = false;
-    bool _disconnecting = false;
+	char dataBuf[256];
+	const char *deviceUuid = nullptr;
+	const char *addr = nullptr;
+	unsigned int port = 0;
+	bool _isConnected = false;
+	bool _disconnecting = false;
 
 
-    CommandHandler _commandHandler = nullptr;
-    ConnectionHandler _connectedHandler = nullptr;
-    ConnectionHandler _disconnectedHandler = nullptr;
+	CommandHandler _commandHandler = nullptr;
+	ConnectionHandler _connectedHandler = nullptr;
+	ConnectionHandler _disconnectedHandler = nullptr;
 
-    void connected(AsyncSSLClient *client);
-    void disconnected(AsyncSSLClient *client);
-    void data(AsyncSSLClient *client, void *data, int len);
+	void connected(AsyncSSLClient *client);
+
+	void disconnected(AsyncSSLClient *client);
+
+	void data(AsyncSSLClient *client, void *data, int len);
 };
 
 #endif

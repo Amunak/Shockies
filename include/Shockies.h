@@ -1,5 +1,6 @@
 #ifndef _Shockies_h
 #define _Shockies_h
+
 #include <ESPAsyncWebServer.h>
 #include <Devices.h>
 #include <Transmit.h>
@@ -46,23 +47,23 @@ DNSServer dnsServer;
  */
 struct EEPROM_Settings
 {
-  uint16_t SettingsVersion;
-  /// Name of the Wi-Fi SSID to connect to on boot
-  char WifiName[33];
-  /// Password for the Wi-Fi network
-  char WifiPassword[65];
-  /// Device UUID for websocket endpoint.
-  char DeviceId[UUID_STR_LEN];
-  /// Require DeviceID to be part of the local websocket URI (ws://shockies.local/<deviceID>)
-  bool RequireDeviceId = false;
-  /// Allow the device to be controlled from shockies.dev. This only works for me at the moment.
-  bool AllowRemoteAccess = false;
-  /// Allow up to 3 devices to be configured
-  Settings Devices[3];
+	uint16_t SettingsVersion;
+	/// Name of the Wi-Fi SSID to connect to on boot
+	char WifiName[33];
+	/// Password for the Wi-Fi network
+	char WifiPassword[65];
+	/// Device UUID for websocket endpoint.
+	char DeviceId[UUID_STR_LEN];
+	/// Require DeviceID to be part of the local websocket URI (ws://shockies.local/<deviceID>)
+	bool RequireDeviceId = false;
+	/// Allow the device to be controlled from shockies.dev. This only works for me at the moment.
+	bool AllowRemoteAccess = false;
+	/// Allow up to 3 devices to be configured
+	Settings Devices[3];
 } EEPROMData;
 
 /// Task loop for WebServer, WebSockets and DNS handlers.
-void WebHandlerTask(void* parameter);
+void WebHandlerTask(void *parameter);
 
 /// HTTP Handler for '/' 
 void HTTP_GET_Index(AsyncWebServerRequest *request);
@@ -86,9 +87,9 @@ void WS_SendConfig();
 
 void SR_HandleConnected();
 
-void SR_HandleCommand(char* data, size_t len);
+void SR_HandleCommand(char *data, size_t len);
 
-const char* HandleCommand(char* data);
+const char *HandleCommand(char *data);
 
 void UpdateDevices();
 
@@ -98,20 +99,23 @@ void UpdateDevices();
  */
 inline void UUID_Generate(uuid_t uuid)
 {
-  esp_fill_random(uuid, sizeof(uuid_t));
-  
-  /* uuid version */
-  uuid[6] = 0x40 | (uuid[6] & 0xF);
-  
-  /* uuid variant */
-  uuid[8] = (0x80 | uuid[8]) & ~0x40;
+	esp_fill_random(uuid, sizeof(uuid_t));
+
+	/* uuid version */
+	uuid[6] = 0x40 | (uuid[6] & 0xF);
+
+	/* uuid variant */
+	uuid[8] = (0x80 | uuid[8]) & ~0x40;
 }
 
-inline void UUID_ToString(uuid_t uuid, char* string)
+inline void UUID_ToString(uuid_t uuid, char *string)
 {
-  snprintf(string, UUID_STR_LEN,
-  "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-  uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
-  uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+	snprintf(
+		string, UUID_STR_LEN,
+		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
+		uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]
+	);
 }
+
 #endif
