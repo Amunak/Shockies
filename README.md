@@ -141,6 +141,69 @@ The updates page on http://shockies.local/update allows you to remotely update t
 From this page, you can upload `firmware.bin` and `spiffs.bin` which can be found in the [releases](https://github.com/Aerizeon/Shockies/releases) section.
 
 
+## Shockies Websocket Protocol
+The Shockies Websocket Protocol is a very simple text-based protocol. Each message starts with a command, followed by a space, and then any parameters for that command. Each parameter is separated by a space.
+
+When the connection is first established, the device will respond with a `OK: CONNECTED` message.
+Shockies will also send current configuration to the client.
+
+### Config Message Format
+The config message is sent in the following format: `CONFIG:<hex data>`. It represents the current configuration of the device.
+You will receive it when you connect to the device, and any time the configuration is changed - you need to be prepared to handle this message at any time.
+
+Note that currently only the configuration for the first device is sent.
+
+The hex data is formatted as follows:
+```
+CONFIG:0000XXYYZZAABB
+```
+
+- `0000`: A placeholder for future use.
+- `XX`: Describes enabled features. Each bit represents a feature; if the bit is set, the feature is enabled.
+  - `0x01`: Shock
+  - `0x02`: Vibrate
+  - `0x04`: Beep
+  - `0x08`: Light
+- `YY`: Maximum shock intensity setting for the device.
+- `ZZ`: Maximum shock duration setting for the device.
+- `AA`: Maximum vibrate intensity setting for the device.
+- `BB`: Maximum vibrate duration setting for the device.
+
+For example, a message might look like this: `CONFIG:00000F1E056405`.
+This would represent a device with all (current) features enabled, a maximum shock intensity of 30%, a maximum shock duration of 5 seconds,
+a maximum vibrate intensity of 100%, and a maximum vibrate duration of 5 seconds.
+
+### Commands
+Note that whenever you send an "action" command, it will keep sending (transmitting) until you send a `R` command to reset it
+or until the maximum duration is reached - the duration itself is not a part of any command.
+
+You should wait at least about ~300ms between resetting a command if you want to be sure it has triggered, as the collar may not respond immediately.
+
+The `channel` parameter is a number from 0 to 2, and the `intensity` parameter is a number from 0 to 100 (or less, depending on the maximum intensity setting).
+
+The `access key` parameter is a string that you set in the configuration page, and is used to prevent unauthorized access to the device.
+If you do not set an access key, you can omit it from the command as it is ignored.
+
+| Command                                | Example             | Response                | Description                                                                                                                                                                             |
+|----------------------------------------|---------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `P`                                    | `P`                 | -                       | Pings the device to keep the Websocket connection alive.                                                                                                                                |
+| `X`                                    | `X`                 | `OK: EMERGENCY STOP`    | Trigger an emergency stop on the device. It will need to be reset manually.                                                                                                             |
+| `R`                                    | `R`                 | `OK: R`                 | Resets the current command and stops transmitting.                                                                                                                                      |
+| `L <channel> <intensity> <access key>` | `L 2 100`           | `OK: L`                 | Triggers the light on the collar. Note that `intensity` likely has no effect here. (The example would trigger the light for the third device.)                                          |
+| `B <channel> <intensity> <access key>` | `B 1 1 verysecret`  | `OK: B`                 | Triggers the beep on the collar. Note that `intensity` likely has no effect here. (The example would trigger the beep for the second device if you set the access key to `verysecret`.) |
+| `V <channel> <intensity> <access key>` | `V 42 100`          | `OK: V`                 | Starts the vibration on the collar. (The example would start the vibration for the first device at 42% intensity, and only if there was no access key required.)                        |
+| `S <channel> <intensity> <access key>` | `S 0 30 verysecret` | `OK: S`                 | Starts the shock on the collar. (The example would start the shock for the first device at 30% intensity, assuming the access key was set to `verysecret`.)                             |
+
+#### Other Responses
+| Response                    | Description                                                           |
+|-----------------------------|-----------------------------------------------------------------------|
+| `ERROR: EMERGENCY STOP`     | The device is in an emergency stop state. You must reset it manually. |
+| `ERROR: INVALID FORMAT`     | The command sent was invalid (most likely missing some arguments)     |
+| `ERROR: INVALID ACCESS KEY` | The access key is required and either was not sent or is incorrect.   |
+| `ERROR: INVALID ID`         | The device ID is out of range.                                        |
+
+Note that if the device does not respond to a command you are probably sending one that is disabled.
+It will also not respond if you send a non-existent command.
 
 ## Resonite Control
 Message Epsilion for more information.
