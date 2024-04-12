@@ -495,16 +495,17 @@ const char *HandleCommand(char *data)
 		return "OK: R";
 	}
 
-		// Triggers an emergency stop. This will require the ESP-32 to be rebooted.
-	else if (*command == 'X') {
+	// Triggers an emergency stop. This will require the ESP-32 to be rebooted.
+	if (*command == 'X') {
 		emergencyStop = true;
 		for (auto &device: Devices) {
 			device->SetCommand(Command::None);
 		}
 		return "OK: EMERGENCY STOP";
 	}
-		// Ping to reset the lost connection timeout.
-	else if (*command == 'P') {
+
+	// Ping to reset the lost connection timeout.
+	if (*command == 'P') {
 		lastWatchdogTime = millis();
 		return nullptr;
 	}
@@ -539,7 +540,7 @@ const char *HandleCommand(char *data)
 	uint16_t id = atoi(id_str);
 	uint8_t intensity = atoi(intensity_str);
 
-	if (id > 3) {
+	if (id > 2) {
 		return "ERROR: INVALID ID";
 	}
 
@@ -548,23 +549,26 @@ const char *HandleCommand(char *data)
 		Devices[id]->SetCommand(Command::Light, intensity);
 		return "OK: L";
 	}
-		// Beep
-	else if (*command == 'B' && EEPROMData.Devices[id].FeatureEnabled(Command::Beep)) {
+
+	// Beep
+	if (*command == 'B' && EEPROMData.Devices[id].FeatureEnabled(Command::Beep)) {
 		Devices[id]->SetCommand(Command::Beep, intensity);
 		return "OK: B";
 	}
-		// Vibrate
-	else if (*command == 'V' && EEPROMData.Devices[id].FeatureEnabled(Command::Vibrate)) {
+
+	// Vibrate
+	if (*command == 'V' && EEPROMData.Devices[id].FeatureEnabled(Command::Vibrate)) {
 		Devices[id]->SetCommand(Command::Vibrate, intensity);
 		return "OK: V";
 	}
-		// Shock
-	else if (*command == 'S' && EEPROMData.Devices[id].FeatureEnabled(Command::Shock)) {
+
+	// Shock
+	if (*command == 'S' && EEPROMData.Devices[id].FeatureEnabled(Command::Shock)) {
 		Devices[id]->SetCommand(Command::Shock, intensity);
 		return "OK: S";
-	} else {
-		return nullptr;
 	}
+
+	return nullptr;
 }
 
 void UpdateDevices()
