@@ -88,7 +88,7 @@ void HTTP_Handle_404(AsyncWebServerRequest *request);
 /// Handler for WebSocket events.
 void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
-void WS_SendConfig();
+void WS_SendConfig(const uint16_t deviceIndex = 0);
 
 void SR_HandleConnected();
 

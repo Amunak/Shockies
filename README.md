@@ -183,20 +183,21 @@ or until the maximum duration is reached - the duration itself is not a part of 
 
 You should wait at least about ~300ms between resetting a command if you want to be sure it has triggered, as the collar may not respond immediately.
 
-The `channel` parameter is a number from 0 to 2, and the `intensity` parameter is a number from 0 to 100 (or less, depending on the maximum intensity setting).
+The `device` parameter is a number from 0 to 2, and the `intensity` parameter is a number from 0 to 100 (or less, depending on the maximum intensity setting).
 
 The `access key` parameter is a string that you set in the configuration page, and is used to prevent unauthorized access to the device.
 If you do not set an access key, you can omit it from the command as it is ignored.
 
-| Command                                | Example             | Response                | Description                                                                                                                                                                             |
-|----------------------------------------|---------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `P`                                    | `P`                 | -                       | Pings the device to keep the Websocket connection alive.                                                                                                                                |
-| `X`                                    | `X`                 | `OK: EMERGENCY STOP`    | Trigger an emergency stop on the device. It will need to be reset manually.                                                                                                             |
-| `R`                                    | `R`                 | `OK: R`                 | Resets the current command and stops transmitting.                                                                                                                                      |
-| `L <channel> <intensity> <access key>` | `L 2 100`           | `OK: L`                 | Triggers the light on the collar. Note that `intensity` likely has no effect here. (The example would trigger the light for the third device.)                                          |
-| `B <channel> <intensity> <access key>` | `B 1 1 verysecret`  | `OK: B`                 | Triggers the beep on the collar. Note that `intensity` likely has no effect here. (The example would trigger the beep for the second device if you set the access key to `verysecret`.) |
-| `V <channel> <intensity> <access key>` | `V 42 100`          | `OK: V`                 | Starts the vibration on the collar. (The example would start the vibration for the first device at 42% intensity, and only if there was no access key required.)                        |
-| `S <channel> <intensity> <access key>` | `S 0 30 verysecret` | `OK: S`                 | Starts the shock on the collar. (The example would start the shock for the first device at 30% intensity, assuming the access key was set to `verysecret`.)                             |
+| Command                               | Example             | Response                | Description                                                                                                                                                                             |
+|---------------------------------------|---------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `P`                                   | `P`                 | -                       | Pings the device to keep the Websocket connection alive.                                                                                                                                |
+| `X`                                   | `X`                 | `OK: EMERGENCY STOP`    | Trigger an emergency stop on the device. It will need to be reset manually.                                                                                                             |
+| `R`                                   | `R`                 | `OK: R`                 | Resets the current command and stops transmitting.                                                                                                                                      |
+| `C <device>`                          | `C 1`               | `CONFIG:00000F1E056405` | Returns the current configuration of the chosen device. (The example would return the configuration for the second device.)                                                             |
+| `L <device> <intensity> <access key>` | `L 2 100`           | `OK: L`                 | Triggers the light on the collar. Note that `intensity` likely has no effect here. (The example would trigger the light for the third device.)                                          |
+| `B <device> <intensity> <access key>` | `B 1 1 verysecret`  | `OK: B`                 | Triggers the beep on the collar. Note that `intensity` likely has no effect here. (The example would trigger the beep for the second device if you set the access key to `verysecret`.) |
+| `V <device> <intensity> <access key>` | `V 42 100`          | `OK: V`                 | Starts the vibration on the collar. (The example would start the vibration for the first device at 42% intensity, and only if there was no access key required.)                        |
+| `S <device> <intensity> <access key>` | `S 0 30 verysecret` | `OK: S`                 | Starts the shock on the collar. (The example would start the shock for the first device at 30% intensity, assuming the access key was set to `verysecret`.)                             |
 
 #### Other Responses
 | Response                    | Description                                                           |

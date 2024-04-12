@@ -15,6 +15,8 @@ ShockiesRemote *remoteControl;
 
 void TransmitKeepalive(unsigned int currentTime, unique_ptr<Device> &device);
 
+void BuildConfigString(char *configBuffer);
+
 void setup()
 {
 	unsigned long wifiConnectTime = 0;
@@ -432,18 +434,23 @@ void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
 	}
 }
 
-void WS_SendConfig()
+void BuildConfigString(char *configBuffer, const uint16_t deviceIndex)
 {
-	char configBuffer[256];
 	sprintf(
 		configBuffer, "CONFIG:%04X%02X%02X%02X%02X%02X",
 		0,
-		EEPROMData.Devices[0].Features,
-		EEPROMData.Devices[0].ShockIntensity,
-		EEPROMData.Devices[0].ShockDuration,
-		EEPROMData.Devices[0].VibrateIntensity,
-		EEPROMData.Devices[0].VibrateDuration
+		EEPROMData.Devices[deviceIndex].Features,
+		EEPROMData.Devices[deviceIndex].ShockIntensity,
+		EEPROMData.Devices[deviceIndex].ShockDuration,
+		EEPROMData.Devices[deviceIndex].VibrateIntensity,
+		EEPROMData.Devices[deviceIndex].VibrateDuration
 	);
+}
+
+void WS_SendConfig(const uint16_t deviceIndex)
+{
+	char configBuffer[256];
+	BuildConfigString(configBuffer, deviceIndex);
 	webSocket->textAll(configBuffer);
 	webSocketId->textAll(configBuffer);
 }
@@ -451,15 +458,7 @@ void WS_SendConfig()
 void SR_HandleConnected()
 {
 	char configBuffer[256];
-	sprintf(
-		configBuffer, "CONFIG:%04X%02X%02X%02X%02X%02X",
-		0,
-		EEPROMData.Devices[0].Features,
-		EEPROMData.Devices[0].ShockIntensity,
-		EEPROMData.Devices[0].ShockDuration,
-		EEPROMData.Devices[0].VibrateIntensity,
-		EEPROMData.Devices[0].VibrateDuration
-	);
+	BuildConfigString(configBuffer, 0);
 	remoteControl->sendCommand(configBuffer);
 }
 
@@ -508,6 +507,22 @@ const char *HandleCommand(char *data)
 	else if (*command == 'P') {
 		lastWatchdogTime = millis();
 		return nullptr;
+	}
+
+	// Command to get a device config
+	if (*command == 'C') {
+		uint16_t id = 0;
+		if (id_str != nullptr) {
+			id = atoi(id_str);
+			if (id > 2) {
+				return "ERROR: INVALID ID";
+			}
+		}
+
+		static char configBuffer[256]; // @todo: This is not thread safe and bad practice in general; refactor this whole function
+		BuildConfigString(configBuffer, id);
+
+		return configBuffer;
 	}
 
 	if (id_str == nullptr || intensity_str == nullptr) {
