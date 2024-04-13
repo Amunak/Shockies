@@ -4,7 +4,7 @@
 #include <utility>
 
 Device::Device(shared_ptr<Transmitter> transmitter, const Model deviceModel, const Settings deviceSettings, const Protocol deviceProtocol)
-	: DeviceTransmitter(std::move(std::move(std::move(transmitter)))), DeviceModel(deviceModel), DeviceSettings(deviceSettings), DeviceProtocol(deviceProtocol)
+	: DeviceTransmitter(std::move(transmitter)), DeviceModel(deviceModel), DeviceSettings(deviceSettings), DeviceProtocol(deviceProtocol)
 {
 	DeviceCommandStart = DeviceCommandEnd = millis();
 }
