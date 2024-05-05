@@ -205,18 +205,26 @@
 				</fieldset>
 			</div>
 			<div class="tab__content">
-				<div class="input-grid">
+				<fieldset class="input-grid">
+					<legend>Security</legend>
 					<input type="checkbox" id="require_device_id" name="require_device_id"
 					       title="Require DeviceID to be part of the local websocket URI" %RequireDeviceId%>
 					<label for="require_device_id">Require device ID for local control</label>
-					<input type="checkbox" id="allow_remote_access" name="allow_remote_access"
-					       title="Allow this device to be controlled via shockies.dev" %AllowRemoteAccess%>
-					<label for="allow_remote_access">Allow Remote Access</label>
 					<label for="command_access_key">Command Access Key:</label>
 					<input type="text" id="command_access_key" name="command_access_key" maxlength="64" pattern="[^ ]*"
 					       title="Require additional access key to send commands (no spaces!)" value="%CommandAccessKey%">
+				</fieldset>
+				<fieldset class="input-grid">
+					<legend>Remote Access</legend>
+					<input type="checkbox" id="allow_remote_access" name="allow_remote_access"
+					       title="Let this device connect to a remote controller" %AllowRemoteAccess%>
+					<label for="allow_remote_access">Allow Remote Access</label>
+					<label for="remote_access_endpoint">Remote Endpoint:</label>
+					<input type="text" id="remote_access_endpoint" name="remote_access_endpoint" value="%RemoteAccessEndpoint%">
+				</fieldset>
+				<div class="input-grid">
+					<a href="http://shockies.local/update">Update Firmware</a>
 				</div>
-				<a href="http://shockies.local/update">Update Firmware</a>
 			</div>
 			<div class="tab__content">
 				<fieldset class="input-grid">
@@ -240,7 +248,10 @@
 		<input type="hidden" name="configure_features" value="true"/>
 		<input class="button" type="submit" value="Save"/>
 	</form>
-	<pre>ws://shockies.local/websocket/%DeviceId%</pre>
+	<p>
+		<strong>Listening websocket</strong>: <code>ws://shockies.local/websocket/%DeviceId%</code><br>
+		<strong>Remote Access</strong>: <code>%RemoteAccessEndpoint%</code> (<strong>%RemoteStatus%</strong>)
+	</p>
 	<pre>Shockies Version %VersionString%</pre>
 </main>
 </body>

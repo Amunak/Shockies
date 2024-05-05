@@ -1,8 +1,10 @@
 #ifndef _Shockies_h
 #define _Shockies_h
 
+#include "EepromSettings.h"
+#include "Devices.h"
+#include "Remote.h"
 #include <ESPAsyncWebServer.h>
-#include <Devices.h>
 #include <Transmit.h>
 #include <mutex>
 #include <DNSServer.h>
@@ -13,9 +15,8 @@ using std::unique_ptr;
 using std::mutex;
 using std::lock_guard;
 
-#define UUID_STR_LEN 37
-#define SHOCKIES_SETTINGS_VERSION 10
-#define SHOCKIES_VERSION "1.5.0"
+#define SHOCKIES_SETTINGS_VERSION 11
+#define SHOCKIES_VERSION "1.6.0"
 
 typedef uint8_t uuid_t[16];
 
@@ -28,7 +29,7 @@ bool updateAvailable = false;
 /// Stops transmitting all commands, and locks device.
 bool emergencyStop = false;
 
-/// When the last ping was sent from a given controller. 
+/// When the last ping was sent from a given controller.
 uint32_t lastWatchdogTime = 0;
 
 /// Last time an update check was performed
@@ -40,34 +41,11 @@ shared_ptr<Transmitter> DeviceTransmitter;
 AsyncWebServer webServer(80);
 AsyncWebSocket *webSocket;
 AsyncWebSocket *webSocketId;
+Remote *remote;
 DNSServer dnsServer;
+EEPROM_Settings EEPROMData;
 
-/**
- * Stored EEPROM Settings
- */
-struct EEPROM_Settings
-{
-	uint16_t SettingsVersion;
-	/// Name of the Wi-Fi SSID to connect to on boot
-	char WifiName[33];
-	/// Password for the Wi-Fi network
-	char WifiPassword[65];
-	/// Device UUID for websocket endpoint.
-	char DeviceId[UUID_STR_LEN];
-	/// Require DeviceID to be part of the local websocket URI (ws://shockies.local/<deviceID>)
-	bool RequireDeviceId = false;
-	/// Allow the device to be controlled from shockies.dev. This only works for me at the moment.
-	bool AllowRemoteAccess = false;
-	/// Additional key required with each command
-	char CommandAccessKey[65];
-	/// Allow up to 3 devices to be configured
-	Settings Devices[3];
-} EEPROMData;
-
-/// Task loop for WebServer, WebSockets and DNS handlers.
-void WebHandlerTask(void *parameter);
-
-/// HTTP Handler for '/' 
+/// HTTP Handler for '/'
 void HTTP_GET_Index(AsyncWebServerRequest *request);
 
 /// HTTP Handler for '/Update'
@@ -88,13 +66,13 @@ void HTTP_Handle_404(AsyncWebServerRequest *request);
 /// Handler for WebSocket events.
 void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
-void WS_SendConfig(const uint16_t deviceIndex = 0);
+void WS_SendConfig(uint16_t deviceIndex = 0);
 
-void SR_HandleConnected();
+void Remote_HandleCommand(const char *data);
+void Remote_HandleConnect();
+void Remote_HandleDisconnect();
 
-void SR_HandleCommand(char *data, size_t len);
-
-const char *HandleCommand(char *data);
+const char *HandleCommand(const char *data);
 
 void UpdateDevices();
 

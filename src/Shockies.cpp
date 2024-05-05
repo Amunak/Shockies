@@ -1,6 +1,5 @@
 #include "Shockies.h"
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <AsyncTCP.h>
 #include <ESPmDNS.h>
 
@@ -9,13 +8,8 @@
 #include <Update.h>
 #include <esp32-hal.h>
 #include <memory>
-#include <ShockiesRemote.h>
-
-ShockiesRemote *remoteControl;
 
 void TransmitKeepalive(unsigned int currentTime, unique_ptr<Device> &device);
-
-void BuildConfigString(char *configBuffer);
 
 void setup()
 {
@@ -48,10 +42,11 @@ void setup()
 
 		memset(EEPROMData.WifiName, 0, 33);
 		memset(EEPROMData.WifiPassword, 0, 65);
-		memset(EEPROMData.CommandAccessKey, 0, 65);
+		memset(EEPROMData.CommandAccessKey, 0, ACCESS_KEY_LEN);
 		memset(EEPROMData.DeviceId, 0, UUID_STR_LEN);
 		EEPROMData.RequireDeviceId = false;
 		EEPROMData.AllowRemoteAccess = false;
+		memset(EEPROMData.RemoteAccessEndpoint, 0, REMOTE_ENDPOINT_LEN);
 		EEPROMData.SettingsVersion = SHOCKIES_SETTINGS_VERSION;
 		uuid_t deviceID;
 		UUID_Generate(deviceID);
@@ -97,12 +92,8 @@ void setup()
 		dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
 		dnsServer.start(53, "*", WiFi.softAPIP());
 	}
-	remoteControl = new ShockiesRemote(EEPROMData.DeviceId);
-	remoteControl->onCommand(SR_HandleCommand);
-	remoteControl->onConnected(SR_HandleConnected);
-	//if(EEPROMData.AllowRemoteAccess)
-	//remoteControl->connect("192.168.2.4", 5071);
 
+	remote = new Remote(Remote_HandleCommand, Remote_HandleConnect, Remote_HandleDisconnect);
 	webSocket = new AsyncWebSocket("/websocket/");
 	webSocketId = new AsyncWebSocket("/websocket/" + String(EEPROMData.DeviceId));
 	webSocket->onEvent(WS_HandleEvent);
@@ -148,6 +139,8 @@ void setup()
 	} else {
 		Serial.println(WiFi.softAPIP());
 	}
+
+	remote->setup(&EEPROMData);
 }
 
 void loop()
@@ -155,6 +148,7 @@ void loop()
 	unsigned int currentTime = millis();
 	webSocket->cleanupClients();
 	webSocketId->cleanupClients();
+	remote->poll();
 	dnsServer.processNextRequest();
 
 	if (rebootDevice) {
@@ -198,12 +192,27 @@ String templateProcessor(const String &var)
 		return EEPROMData.AllowRemoteAccess ? "checked" : "";
 	} else if (var == "CommandAccessKey") {
 		return EEPROMData.CommandAccessKey;
+	} else if (var == "RemoteAccessEndpoint") {
+		return EEPROMData.RemoteAccessEndpoint;
 	} else if (var == "WifiName") {
 		return EEPROMData.WifiName;
 	} else if (var == "WifiPassword") {
 		return EEPROMData.WifiPassword;
 	} else if (var == "VersionString") {
 		return SHOCKIES_VERSION;
+	} else if (var == "RemoteStatus") {
+		switch (remote->status()) {
+			case State::Disabled:
+				return "Disabled";
+			case State::Connected:
+				return "Connected";
+			case State::Disconnected:
+				return "Disconnected";
+			case State::ConnectionFailed:
+				return "Connection Failed";
+			default:
+				return "Unknown";
+		}
 	}
 
 	if (var.startsWith("Device")) {
@@ -312,7 +321,7 @@ void HTTP_POST_Submit(AsyncWebServerRequest *request)
 		if (request->hasParam("command_access_key", true)) {
 			String &accessKey = const_cast<String &>(request->getParam("command_access_key", true)->value());
 			accessKey.replace(' ', '_');
-			accessKey.toCharArray(EEPROMData.CommandAccessKey, 65);
+			accessKey.toCharArray(EEPROMData.CommandAccessKey, ACCESS_KEY_LEN - 1);
 		}
 
 		EEPROMData.RequireDeviceId = request->hasParam("require_device_id", true);
@@ -322,21 +331,19 @@ void HTTP_POST_Submit(AsyncWebServerRequest *request)
 		}
 
 		EEPROMData.AllowRemoteAccess = request->hasParam("allow_remote_access", true);
-		EEPROM.put(0, EEPROMData);
 
+		if (request->hasParam("remote_access_endpoint", true)) {
+			String &remote_host = const_cast<String &>(request->getParam("remote_access_endpoint", true)->value());
+			remote_host.toCharArray(EEPROMData.RemoteAccessEndpoint, REMOTE_ENDPOINT_LEN - 1);
+		}
+
+		EEPROM.put(0, EEPROMData);
 		EEPROM.commit();
 
-		//if(EEPROMData.AllowRemoteAccess && !remoteControl->isConnected())
-		//remoteControl->connect("192.168.2.4", 5071);
-		//if(!EEPROMData.AllowRemoteAccess && remoteControl->isConnected())
-		//remoteControl->disconnect();
-
 		UpdateDevices();
+		remote->setup(&EEPROMData);
 		WS_SendConfig();
 
-		if (EEPROMData.AllowRemoteAccess && remoteControl->isConnected()) {
-			SR_HandleConnected();
-		}
 	} else if (request->hasParam("configure_wifi", true)) {
 		if (request->hasParam("wifi_ssid", true)) {
 			request->getParam("wifi_ssid", true)->value().toCharArray(EEPROMData.WifiName, 33);
@@ -455,31 +462,47 @@ void WS_SendConfig(const uint16_t deviceIndex)
 	webSocketId->textAll(configBuffer);
 }
 
-void SR_HandleConnected()
+void Remote_HandleCommand(const char *data)
 {
-	char configBuffer[256];
-	BuildConfigString(configBuffer, 0);
-	remoteControl->sendCommand(configBuffer);
-}
-
-void SR_HandleCommand(char *data, size_t len)
-{
-	data[len] = '\0';
-	Serial.printf("[-1] Message: %s\r\n", data);
 	const char *message = HandleCommand(data);
 	if (message != nullptr) {
-		remoteControl->sendCommand(message);
+		remote->send(message);
 	}
 }
 
-const char *HandleCommand(char *data)
+void Remote_HandleConnect()
 {
+	delay(800);
+	String data = String("REGISTER ") + EEPROMData.DeviceId;
+	remote->send(data.c_str());
+}
+
+void Remote_HandleDisconnect()
+{
+
+}
+
+const char *HandleCommand(const char *data)
+{
+	if (strcasecmp(data, "ERROR:") == 0) {
+		return nullptr;
+	}
+	if (strcasecmp(data, "INFO:") == 0) {
+		return nullptr;
+	}
+
 	std::lock_guard<std::mutex> guard(DevicesMutex);
 	if (emergencyStop) {
 		return "ERROR: EMERGENCY STOP";
 	}
 
-	char *command = strtok((char *) data, " ");
+	// allocate a command string we can modify
+	const size_t len = strlen(data);
+	char *buf = new char[len + 1];
+	strncpy(buf, data, len);
+	buf[len] = '\0';
+
+	char *command = strtok(buf, " ");
 	char *id_str = strtok(nullptr, " ");
 	char *intensity_str = strtok(nullptr, " ");
 

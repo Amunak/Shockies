@@ -137,7 +137,8 @@ The **Shock Interval** setting
 #### Security Settings
 - **Require Device ID for local control**: If enabled, the device will require the use of a generated UUID for the websocket connection to control the device. You can see the UUID at the bottom of the page when you enable this option.
 - **Command Access Key**: Commands sent to the device must include this key as the last parameter in the command. This is to prevent unauthorized access to the device.
-- **Allow Remote Access**: Not yet implemented
+- **Allow Remote Access**: If enabled, the device will try to connect to a remote Websocket server to allow control from anywhere.
+- **Remote Endpoint**: The full URL of the remote server to connect to with a Websocket client. (e.g. `wss://example.com/ws` or `http://198.51.100.42:8080/ws`)
 
 
 ## Firmware Updates
@@ -198,6 +199,8 @@ If you do not set an access key, you can omit it from the command as it is ignor
 | `B <device> <intensity> <access key>` | `B 1 1 verysecret`  | `OK: B`                 | Triggers the beep on the collar. Note that `intensity` likely has no effect here. (The example would trigger the beep for the second device if you set the access key to `verysecret`.) |
 | `V <device> <intensity> <access key>` | `V 42 100`          | `OK: V`                 | Starts the vibration on the collar. (The example would start the vibration for the first device at 42% intensity, and only if there was no access key required.)                        |
 | `S <device> <intensity> <access key>` | `S 0 30 verysecret` | `OK: S`                 | Starts the shock on the collar. (The example would start the shock for the first device at 30% intensity, assuming the access key was set to `verysecret`.)                             |
+
+Note that a command cannot start with `ERROR:` or `INFO:` - these are reserved for responses and are not responded to.
 
 #### Other Responses
 | Response                    | Description                                                           |
