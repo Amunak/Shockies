@@ -4,10 +4,8 @@
 using namespace websockets;
 
 void Remote::setup(EEPROM_Settings *settings) {
-	if (this->client != nullptr) {
-		this->client->close();
-		delete this->client;
-		this->client = nullptr;
+	if (client != nullptr) {
+		disconnect();
 		this->triedToConnect = false;
 
 		Serial.println("Remote Access closed");
@@ -18,42 +16,86 @@ void Remote::setup(EEPROM_Settings *settings) {
 		return;
 	}
 
-	Serial.println(String("Starting Remote Access using \"") + settings->RemoteAccessEndpoint + "\"");
+	strcpy(this->remoteAccessEndpoint, settings->RemoteAccessEndpoint);
 
-	this->triedToConnect = true;
-	this->client = new WebsocketsClient();
-	this->client->onMessage(std::bind(&Remote::onMessage, this, std::placeholders::_1));
-	this->client->onEvent(std::bind(&Remote::onEvent, this, std::placeholders::_2));
-	this->client->setInsecure();
-	this->client->connect(settings->RemoteAccessEndpoint);
+	connect();
+}
 
-	if (!this->client->available()) {
+void Remote::connect() {
+	Serial.println(String("Starting Remote Access using \"") + this->remoteAccessEndpoint + "\"");
+
+	triedToConnect = true;
+	client = new WebsocketsClient();
+	client->onMessage(std::bind(&Remote::onMessage, this, std::placeholders::_1));
+	client->onEvent(std::bind(&Remote::onEvent, this, std::placeholders::_2));
+	client->setInsecure();
+	client->connect(this->remoteAccessEndpoint);
+	lastConnectionAttempt = millis();
+
+	if (!client->available()) {
 		Serial.println("Failed to connect to remote control server");
-		delete this->client;
-		this->client = nullptr;
+		disconnect();
 		return;
 	}
 }
 
-State Remote::status() {
-	if (this->client == nullptr) {
-		return this->triedToConnect ? State::ConnectionFailed : State::Disabled;
+void Remote::disconnect() {
+	this->dispose = false;
+	if (client == nullptr) {
+		return;
 	}
 
-	return this->client->available(true) ? State::Connected : State::Disconnected;
+	client->close();
+	delete client;
+	client = nullptr;
+	Serial.println("[Remote] Disposed");
+}
+
+void Remote::tryReconnect() {
+	// if we have a client, we're connected
+	if (client != nullptr) {
+		return;
+	}
+
+	// if we haven't tried to connect yet, we are disabled
+	if (!triedToConnect) {
+		return;
+	}
+
+	// retry only every once in a while
+	if (millis() - lastConnectionAttempt <= RECONNECT_INTERVAL) {
+		return;
+	}
+
+	connect();
+}
+
+State Remote::status() {
+	if (client == nullptr) {
+		return triedToConnect ? State::ConnectionFailed : State::Disabled;
+	}
+
+	return client->available(true) ? State::Connected : State::Disconnected;
 }
 
 void Remote::poll() {
-	if (this->client != nullptr) {
-		this->client->poll();
+	if (dispose) {
+		disconnect();
+		return;
+	}
+
+	tryReconnect();
+
+	if (client != nullptr) {
+		client->poll();
 	}
 }
 
-void Remote::send(const char* data) {
-	if (this->client != nullptr) {
+void Remote::send(const String& data) {
+	if (client != nullptr) {
 		Serial.println(String("[Remote] Sending: ") + data);
 
-		this->client->send(data);
+		client->send(data);
 	}
 }
 
@@ -72,18 +114,19 @@ void Remote::onMessage(const WebsocketsMessage& message) {
 
 	Serial.println(message.data());
 
-	this->commandHandler(message.c_str());
+	commandHandler(message.c_str());
 }
 
 void Remote::onEvent(WebsocketsEvent event) {
 	switch (event) {
 		case WebsocketsEvent::ConnectionOpened:
 			Serial.println("[Remote] Connected");
-			this->connectHandler();
+			connectHandler();
 			break;
 		case WebsocketsEvent::ConnectionClosed:
+			dispose = true; // mark for disposal on next poll
 			Serial.println("[Remote] Disconnected");
-			this->disconnectHandler();
+			disconnectHandler();
 			break;
 		case WebsocketsEvent::GotPing:
 			Serial.println("[Remote] Got a Ping!");

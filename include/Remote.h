@@ -7,6 +7,8 @@
 
 using namespace websockets;
 
+#define RECONNECT_INTERVAL 30000
+
 enum class State {
 	Disabled,
 	Connected,
@@ -28,16 +30,29 @@ public:
 	 */
 	void setup(EEPROM_Settings *settings);
 	State status();
+	/**
+	 * Poll the remote control server for new commands. This should be called in the main loop.
+	 * Does nothing if the remote control server is disabled.
+	 * This function will also attempt to reconnect if the connection was lost or failed.
+	 */
 	void poll();
-	void send(const char *data);
+	void send(const String& data);
 private:
 	std::function<void(const char *data)> commandHandler;
 	std::function<void()> connectHandler;
 	std::function<void()> disconnectHandler;
-	WebsocketsClient *client = nullptr;
 	void onEvent(WebsocketsEvent event);
 	void onMessage(const WebsocketsMessage &message);
+	void connect();
+	void disconnect();
+	void tryReconnect();
+
+	char remoteAccessEndpoint[REMOTE_ENDPOINT_LEN];
+	WebsocketsClient *client = nullptr;
 	bool triedToConnect = false;
+	bool dispose = false;
+	uint32_t lastConnectionAttempt = 0;
+
 };
 
 #endif

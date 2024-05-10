@@ -72,7 +72,7 @@ void Remote_HandleCommand(const char *data);
 void Remote_HandleConnect();
 void Remote_HandleDisconnect();
 
-const char *HandleCommand(const char *data);
+String HandleCommand(const char *data, bool fromRemote = false);
 
 void UpdateDevices();
 

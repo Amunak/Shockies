@@ -191,7 +191,7 @@ If you do not set an access key, you can omit it from the command as it is ignor
 
 | Command                               | Example             | Response                | Description                                                                                                                                                                             |
 |---------------------------------------|---------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `P`                                   | `P`                 | -                       | Pings the device to keep the Websocket connection alive.                                                                                                                                |
+| `P`                                   | `P`                 | -                       | Pings the device to keep the Websocket connection alive. Note that the websocket protocol already has a ping mechanism, and that should be preferred.                                   |
 | `X`                                   | `X`                 | `OK: EMERGENCY STOP`    | Trigger an emergency stop on the device. It will need to be reset manually.                                                                                                             |
 | `R`                                   | `R`                 | `OK: R`                 | Resets the current command and stops transmitting.                                                                                                                                      |
 | `C <device>`                          | `C 1`               | `CONFIG:00000F1E056405` | Returns the current configuration of the chosen device. (The example would return the configuration for the second device.)                                                             |
@@ -221,4 +221,10 @@ An alpha implementation can be found in the follwing public folder:
 `resrec:///U-Epsilion/R-4af8f73a-3765-4ff7-ada0-cdd199286215`
 
 ## Web Control
-*Not yet implemented*
+Shockies can connect to a remote server to allow control from anywhere. This is done using a Websocket connection.
+
+The websocket server should simply send the same commands as you would send to the device directly. Additionally,
+the device has a `REGISTER <random id>` command that is sent to the server when it connects to distinguish it from other devices
+(effectively works as an authentication token). The server responds with a `REMOTE URL <url>` message/command to indicate
+that the device is registered and sends a URL to the device where the device configuration can be accessed.
+This is displayed on the Shockies device configuration page.

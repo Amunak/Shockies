@@ -9,6 +9,11 @@
 #include <esp32-hal.h>
 #include <memory>
 
+#define CONFIG_STRING_LEN 32
+#define REMOTE_CONTROL_URL_LEN 256
+
+String remoteControlConfigurationUrl;
+
 void TransmitKeepalive(unsigned int currentTime, unique_ptr<Device> &device);
 
 void setup()
@@ -194,6 +199,8 @@ String templateProcessor(const String &var)
 		return EEPROMData.CommandAccessKey;
 	} else if (var == "RemoteAccessEndpoint") {
 		return EEPROMData.RemoteAccessEndpoint;
+	}  else if (var == "RemoteControlUrl") {
+		return remoteControlConfigurationUrl;
 	} else if (var == "WifiName") {
 		return EEPROMData.WifiName;
 	} else if (var == "WifiPassword") {
@@ -425,8 +432,8 @@ void WS_HandleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
 			if (info->final && info->opcode == WS_TEXT) {
 				data[len] = '\0';
 				Serial.printf("[%u] Message: %s\r\n", client->id(), data);
-				const char *message = HandleCommand((char *) data);
-				if (message != nullptr) {
+				auto message = HandleCommand((char *) data);
+				if (message != "") {
 					client->text(message);
 				}
 			}
@@ -456,7 +463,7 @@ void BuildConfigString(char *configBuffer, const uint16_t deviceIndex)
 
 void WS_SendConfig(const uint16_t deviceIndex)
 {
-	char configBuffer[256];
+	char configBuffer[CONFIG_STRING_LEN];
 	BuildConfigString(configBuffer, deviceIndex);
 	webSocket->textAll(configBuffer);
 	webSocketId->textAll(configBuffer);
@@ -464,8 +471,8 @@ void WS_SendConfig(const uint16_t deviceIndex)
 
 void Remote_HandleCommand(const char *data)
 {
-	const char *message = HandleCommand(data);
-	if (message != nullptr) {
+	auto message = HandleCommand(data, true);
+	if (message != "") {
 		remote->send(message);
 	}
 }
@@ -474,7 +481,7 @@ void Remote_HandleConnect()
 {
 	delay(800);
 	String data = String("REGISTER ") + EEPROMData.DeviceId;
-	remote->send(data.c_str());
+	remote->send(data);
 }
 
 void Remote_HandleDisconnect()
@@ -482,13 +489,13 @@ void Remote_HandleDisconnect()
 
 }
 
-const char *HandleCommand(const char *data)
+String HandleCommand(const char *data, bool fromRemote)
 {
 	if (strcasecmp(data, "ERROR:") == 0) {
-		return nullptr;
+		return "";
 	}
 	if (strcasecmp(data, "INFO:") == 0) {
-		return nullptr;
+		return "";
 	}
 
 	std::lock_guard<std::mutex> guard(DevicesMutex);
@@ -503,10 +510,30 @@ const char *HandleCommand(const char *data)
 	buf[len] = '\0';
 
 	char *command = strtok(buf, " ");
-	char *id_str = strtok(nullptr, " ");
-	char *intensity_str = strtok(nullptr, " ");
+	char *arg1 = strtok(nullptr, " ");
+	char *arg2 = strtok(nullptr, " ");
 
 	if (command == nullptr) {
+		return "ERROR: INVALID FORMAT";
+	}
+
+	// Remote control commands
+	if (fromRemote && strcmp(command, "REMOTE") == 0) {
+		if (arg1 == nullptr || arg2 == nullptr) {
+			return "ERROR: INVALID FORMAT";
+		}
+
+		if (strcmp(arg1, "URL") == 0) {
+			remoteControlConfigurationUrl = arg2;
+			Serial.printf("Remote control URL set to: %s\n", remoteControlConfigurationUrl.c_str());
+
+			// send initial configuration
+			char configBuffer[CONFIG_STRING_LEN];
+			BuildConfigString(configBuffer, 0);
+
+			return configBuffer;
+		}
+
 		return "ERROR: INVALID FORMAT";
 	}
 
@@ -530,26 +557,26 @@ const char *HandleCommand(const char *data)
 	// Ping to reset the lost connection timeout.
 	if (*command == 'P') {
 		lastWatchdogTime = millis();
-		return nullptr;
+		return "";
 	}
 
 	// Command to get a device config
 	if (*command == 'C') {
 		uint16_t id = 0;
-		if (id_str != nullptr) {
-			id = atoi(id_str);
+		if (arg1 != nullptr) {
+			id = atoi(arg1);
 			if (id > 2) {
 				return "ERROR: INVALID ID";
 			}
 		}
 
-		static char configBuffer[256]; // @todo: This is not thread safe and bad practice in general; refactor this whole function
+		char configBuffer[CONFIG_STRING_LEN];
 		BuildConfigString(configBuffer, id);
 
 		return configBuffer;
 	}
 
-	if (id_str == nullptr || intensity_str == nullptr) {
+	if (arg1 == nullptr || arg2 == nullptr) {
 		return "ERROR: INVALID FORMAT";
 	}
 
@@ -560,8 +587,8 @@ const char *HandleCommand(const char *data)
 		}
 	}
 
-	uint16_t id = atoi(id_str);
-	uint8_t intensity = atoi(intensity_str);
+	uint16_t id = atoi(arg1);
+	uint8_t intensity = atoi(arg2);
 
 	if (id > 2) {
 		return "ERROR: INVALID ID";
@@ -591,7 +618,7 @@ const char *HandleCommand(const char *data)
 		return "OK: S";
 	}
 
-	return nullptr;
+	return "";
 }
 
 void UpdateDevices()
