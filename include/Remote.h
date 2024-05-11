@@ -52,7 +52,6 @@ private:
 	bool triedToConnect = false;
 	bool dispose = false;
 	uint32_t lastConnectionAttempt = 0;
-
 };
 
 #endif

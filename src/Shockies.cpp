@@ -480,7 +480,7 @@ void Remote_HandleCommand(const char *data)
 void Remote_HandleConnect()
 {
 	delay(800);
-	String data = String("REGISTER ") + EEPROMData.DeviceId;
+	String data = String("REGISTER ") + EEPROMData.DeviceId + " " + SHOCKIES_VERSION;
 	remote->send(data);
 }
 

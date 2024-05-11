@@ -224,7 +224,7 @@ An alpha implementation can be found in the follwing public folder:
 Shockies can connect to a remote server to allow control from anywhere. This is done using a Websocket connection.
 
 The websocket server should simply send the same commands as you would send to the device directly. Additionally,
-the device has a `REGISTER <random id>` command that is sent to the server when it connects to distinguish it from other devices
+the device has a `REGISTER <random id> <shockies version>` command that is sent to the server when it connects to distinguish it from other devices
 (effectively works as an authentication token). The server responds with a `REMOTE URL <url>` message/command to indicate
 that the device is registered and sends a URL to the device where the device configuration can be accessed.
 This is displayed on the Shockies device configuration page.
