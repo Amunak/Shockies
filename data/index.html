@@ -43,7 +43,7 @@
 				if (webSocket != null && webSocket.readyState === WebSocket.OPEN) {
 					webSocket.send("P");
 				}
-			}, 1000);
+			}, 30000);
 
 			const devType0 = document.querySelector('#device_type0');
 			const devType1 = document.querySelector('#device_type1');
