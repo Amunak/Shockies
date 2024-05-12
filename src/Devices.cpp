@@ -17,8 +17,11 @@ void Device::SetCommand(Command targetCommand, unsigned char value)
 	int commandMaxValue = static_cast<int>(DeviceCommand == Command::Shock ? DeviceSettings.ShockIntensity : DeviceSettings.VibrateIntensity);
 
 	if (targetCommand == Command::None) {
-		DeviceHasCommand = false;
-		DeviceCommandEnd = max(currentTime, DeviceCommandStart + commandMaxDuration);
+		if (DeviceHasCommand) { // we have just finished a command
+			LastDeviceCommand = currentTime;
+			DeviceHasCommand = false;
+			DeviceCommandEnd = max(currentTime, DeviceCommandStart + commandMaxDuration);
+		}
 	} else {
 		DeviceHasCommand = true;
 		DeviceCommand = targetCommand;
@@ -78,7 +81,7 @@ bool Device::ShouldTransmitKeepalive(unsigned int currentTime) const
 	// Ensure the interval is at least 10 seconds
 	interval = std::max<unsigned char>(10, interval);
 
-	return (currentTime - DeviceCommandStart) > (interval * 1000);
+	return (currentTime - LastDeviceCommand) > (interval * 1000);
 }
 
 Petrainer::Petrainer(shared_ptr<Transmitter> transmitter, Settings deviceSettings)
@@ -120,9 +123,6 @@ void Petrainer::TransmitCommand(unsigned int currentTime)
 	 * until it beeps, and then send a command with the
 	 * desired Channel ID and Collar ID
 	 */
-	if (!ShouldTransmit(currentTime)) {
-		return;
-	}
 
 	unsigned long long data = 0LL;
 	data |= (((unsigned long long) (MapCommand(DeviceCommand) | 0x80)) << 32);
@@ -162,10 +162,6 @@ Funnipet::Funnipet(shared_ptr<Transmitter> transmitter, Settings deviceSettings)
 
 void Funnipet::TransmitCommand(unsigned int currentTime)
 {
-	if (!ShouldTransmit(currentTime)) {
-		return;
-	}
-
 	unsigned long long data = 0LL;
 	data |= (((unsigned long long) DeviceSettings.DeviceId) << 24);
 	data |= (((unsigned long long) MapCommand(DeviceCommand)) << 16);

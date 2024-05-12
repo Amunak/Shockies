@@ -168,7 +168,11 @@ void loop()
 
 	lock_guard<mutex> guard(DevicesMutex);
 	for (auto &device: Devices) {
-		device->TransmitCommand(currentTime);
+		if (device->ShouldTransmit(currentTime)) {
+			device->TransmitCommand(currentTime);
+
+			continue;
+		}
 
 		// check when we last transmitted and send a keepalive if needed
 		if (device->ShouldTransmitKeepalive(currentTime)) {

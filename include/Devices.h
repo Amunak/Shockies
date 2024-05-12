@@ -101,6 +101,7 @@ protected:
 	bool DeviceHasCommand = false;
 	Command DeviceCommand;
 	unsigned char DeviceCommandValue{};
+	unsigned int LastDeviceCommand;
 	unsigned int DeviceCommandStart;
 	unsigned int DeviceCommandEnd;
 	unsigned int WatchdogTime{};
