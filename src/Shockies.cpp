@@ -495,10 +495,10 @@ void Remote_HandleDisconnect()
 
 String HandleCommand(const char *data, bool fromRemote)
 {
-	if (strcasecmp(data, "ERROR:") == 0) {
+	if (strncasecmp(data, "ERROR:", 6) == 0) {
 		return "";
 	}
-	if (strcasecmp(data, "INFO:") == 0) {
+	if (strncasecmp(data, "INFO:", 5) == 0) {
 		return "";
 	}
 
